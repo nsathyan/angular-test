@@ -1,0 +1,49 @@
+variables:
+  CI_REGISTRY_USER: "playground"
+  CI_REGISTRY_PASSWORD: "Dd603c48d603c48"
+  CI_REGISTRY: "pg-registry.altimetrik.com"
+  CI_REGISTRY_IMAGE: "pg-registry.altimetrik.com/playground"
+  SONAR_URL: "http://pg-sonar.altimetrik.com/about"
+  SONAR_ANALYSIS_MODE: publish
+
+
+stages:
+  - Build
+  - ImagePrune
+  - Buildimage
+  - Dockerizing
+  - Deploy
+
+
+Dockerbuild:
+  stage: Build
+  script:
+    - pwd
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build -t $CI_REGISTRY_IMAGE .
+
+ImagePrune:
+     stage: ImagePrune
+     script:
+     - docker rm -f $CI_PROJECT_NAME
+     allow_failure: true
+    
+    
+ImageTagging:
+   stage: Dockerizing
+   script:
+    - docker tag $CI_REGISTRY_IMAGE $CI_REGISTRY_IMAGE/$CI_PROJECT_NAME
+    
+DockerPush:
+   stage: Dockerizing
+   script: 
+    - docker push $CI_REGISTRY_IMAGE/$CI_PROJECT_NAME
+
+Docker-deploy:
+  stage: Deploy
+  script:
+    - docker run --name $CI_PROJECT_NAME -d -p 1068:80  $CI_REGISTRY_IMAGE/$CI_PROJECT_NAME
+
+
+  only:
+    - master
